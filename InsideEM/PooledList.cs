@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace InsideEM
 {
@@ -101,8 +102,58 @@ namespace InsideEM
             {
                 return false;
             }
+
+            ref var FirstElemRef = ref Arr[0];
+
+            ref var LastElemRef = ref Arr[ReadIndex];
+
+            ref var CurrentElemRef = ref LastElemRef;
             
-            sssss
+            Unsafe.SkipInit(out int Diff);
+            
+            while (!Unsafe.IsAddressLessThan(ref CurrentElemRef, ref FirstElemRef))
+            {
+                if (EqualityComparer<T>.Default.Equals(Item, CurrentElemRef))
+                {
+                    unchecked
+                    {
+                        ReadIndex--;
+                    }
+
+                    if ((Diff = (int) Unsafe.ByteOffset(ref CurrentElemRef, ref LastElemRef)) == 0) //Fast path
+                    {
+                        return true;
+                    }
+                    
+                    goto RemoveSlow;
+                }
+
+                Unsafe.Subtract(ref CurrentElemRef, 1);
+            }
+
+            return false;
+            
+            RemoveSlow:
+            {
+                //The total count that needs to be moved would be Diff
+                
+                //E.x. 0, 1, 2, 3, 4, 5 , 6, 7
+                
+                //Say 4 is deleted... 7 - 4 = 3
+                
+                //We take the element next to CurrentElem, which is guaranteed to exist
+                //should CurrentElem != LastElem
+
+                var DestSpan = MemoryMarshal.CreateSpan(ref CurrentElemRef, Diff);
+                
+                Unsafe.Add(ref CurrentElemRef, 1);
+
+                var SourceSpan = MemoryMarshal.CreateReadOnlySpan(ref CurrentElemRef, Diff);
+                
+                SourceSpan.CopyTo(DestSpan);
+
+                return true;
+            }
         }
 
         [MethodImpl(EMHelpers.InlineAndOptimize)]
@@ -183,12 +234,7 @@ namespace InsideEM
             {
                 CurrentIndex = 0;
             }
-            
-            public void Dispose()
-            {
-                //Nothing here xd
-            }
-        }
+        } 
 
         [MethodImpl(EMHelpers.InlineAndOptimize)]
         public Enumerator GetEnumerator()
