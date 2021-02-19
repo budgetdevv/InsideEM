@@ -72,15 +72,6 @@ namespace InsideEM
             Arr[ReadIndex] = Item;
         }
         
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
-        public void Remove(T Item)
-        {
-            unchecked
-            {
-                ReadIndex--;
-            }
-        }
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void Resize()
         {
@@ -95,6 +86,23 @@ namespace InsideEM
             ArrayPool<T>.Shared.Return(OldArr);
         }
         
+        [MethodImpl(EMHelpers.InlineAndOptimize)]
+        public void Remove(ref T Item)
+        {
+            Remove(Item);
+        }
+        
+        [MethodImpl(EMHelpers.InlineAndOptimize)]
+        public void Remove(T Item)
+        {
+            unchecked
+            {
+                ReadIndex--;
+            }
+        }
+        
+        
+
         [MethodImpl(EMHelpers.InlineAndOptimize)]
         public void Dispose()
         {
