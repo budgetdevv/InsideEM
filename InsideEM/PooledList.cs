@@ -16,10 +16,10 @@ namespace InsideEM
         public int Count
         {
             [MethodImpl(EMHelpers.InlineAndOptimize)]
-            get => count;
+            get => unchecked(ReadIndex + 1);
         }
-        
-        private int ReadIndex, count;
+
+        private int ReadIndex;
 
         private T[] Arr;
 
@@ -53,8 +53,6 @@ namespace InsideEM
             Arr = ArrayPool<T>.Shared.Rent(InitCapacity);
 
             ReadIndex = -1;
-
-            count = 0;
         }
 
         [MethodImpl(EMHelpers.InlineAndOptimize)]
