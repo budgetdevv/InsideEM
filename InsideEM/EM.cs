@@ -5,32 +5,6 @@ using Discord;
 
 namespace InsideEM
 {
-    // public delegate void EmbedMenuDel<ListT, UserT, ChannelT>(ref EmbedMenu<ListT, UserT, ChannelT> EM) 
-    //     where ListT : IList<EmbedMenuAct<ListT, UserT, ChannelT>> 
-    //     where UserT : IUser 
-    //     where ChannelT : ITextChannel;
-    
-    // public struct EmbedMenuAct<ListT, UserT, ChannelT> where ListT : IList<EmbedMenuAct<ListT, UserT, ChannelT>> 
-    //     where UserT : IUser 
-    //     where ChannelT : ITextChannel
-    // {
-    //     public string Emoji, Name, Desc;
-    //
-    //     public EmbedMenuDel<ListT, UserT, ChannelT> Act;
-    //
-    //     [MethodImpl(EMHelpers.InlineAndOptimize)]
-    //     public EmbedMenuAct(string emoji, string name, string desc, EmbedMenuDel<ListT, UserT, ChannelT> act)
-    //     {
-    //         Emoji = emoji;
-    //
-    //         Name = name;
-    //
-    //         Desc = desc;
-    //
-    //         Act = act;
-    //     }
-    // }
-    
     public partial struct EmbedMenu<UserT, ChannelT>
         where UserT: IUser 
         where ChannelT: ITextChannel
