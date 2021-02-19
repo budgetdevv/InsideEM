@@ -100,8 +100,18 @@ namespace InsideEM
                 ReadIndex--;
             }
         }
+
+        [MethodImpl(EMHelpers.InlineAndOptimize)]
+        public void AsSpan(out Span<T> Span)
+        {
+            Span = Arr.AsSpan(0, Count);
+        }
         
-        
+        [MethodImpl(EMHelpers.InlineAndOptimize)]
+        public void AsSpan(int StartIndex, int count, out Span<T> Span)
+        {
+            Span = Arr.AsSpan(StartIndex, count);
+        }
 
         [MethodImpl(EMHelpers.InlineAndOptimize)]
         public void Dispose()
