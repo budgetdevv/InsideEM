@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace InsideEM
@@ -87,18 +89,36 @@ namespace InsideEM
         }
         
         [MethodImpl(EMHelpers.InlineAndOptimize)]
-        public void Remove(ref T Item)
+        public bool Remove(ref T Item)
         {
-            Remove(Item);
+            return Remove(Item);
         }
         
         [MethodImpl(EMHelpers.InlineAndOptimize)]
-        public void Remove(T Item)
+        public bool Remove(T Item)
         {
+            if (ReadIndex == 0)
+            {
+                return false;
+            }
+            
+            sssss
+        }
+
+        [MethodImpl(EMHelpers.InlineAndOptimize)]
+        public bool RemoveLast()
+        {
+            if (ReadIndex == 0)
+            {
+                return false;
+            }
+            
             unchecked
             {
                 ReadIndex--;
             }
+
+            return true;
         }
 
         [MethodImpl(EMHelpers.InlineAndOptimize)]
@@ -113,6 +133,69 @@ namespace InsideEM
             Span = Arr.AsSpan(StartIndex, count);
         }
 
+        [MethodImpl(EMHelpers.InlineAndOptimize)]
+        public void Clear()
+        {
+            ReadIndex = -1;
+        }
+        
+        public struct Enumerator//: IEnumerator<T>
+        {
+            private T[] Arr;
+            
+            private uint CurrentIndex;
+
+            public Enumerator(T[] arr)
+            {
+                Arr = arr;
+
+                CurrentIndex = 0;
+                
+                Unsafe.SkipInit(out _Current);
+            }
+            
+            public T Current
+            {
+                [MethodImpl(EMHelpers.InlineAndOptimize)]
+                get => _Current;
+            }
+
+            private T _Current;
+            
+            public bool MoveNext()
+            {
+                if (CurrentIndex >= Arr.Length)
+                {
+                    return false;
+                }
+
+                _Current = Arr[CurrentIndex];
+
+                unchecked
+                {
+                    CurrentIndex++;
+                }
+                
+                return true;
+            }
+
+            public void Reset()
+            {
+                CurrentIndex = 0;
+            }
+            
+            public void Dispose()
+            {
+                //Nothing here xd
+            }
+        }
+
+        [MethodImpl(EMHelpers.InlineAndOptimize)]
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(Arr);
+        }
+        
         [MethodImpl(EMHelpers.InlineAndOptimize)]
         public void Dispose()
         {

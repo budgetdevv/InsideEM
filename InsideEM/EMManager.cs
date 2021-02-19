@@ -7,6 +7,8 @@ namespace InsideEM
 {
     public static class EMManager
     {
+        private static readonly DiscordSocketClient Client;
+        
         public static void GenEmbed<UserT, ChannelT>(EmbedMenu<UserT, ChannelT>.EmbedMenuDel EMDel)
             where UserT : IUser
             where ChannelT : ITextChannel
@@ -17,7 +19,7 @@ namespace InsideEM
 
             if (!Unsafe.IsNullRef(ref EMRef))
             {
-                ssss
+                _ = EMRef.Compile(Client);
             }
         }
 

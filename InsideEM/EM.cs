@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Discord;
+using Discord.WebSocket;
 
 namespace InsideEM
 {
@@ -72,6 +74,8 @@ namespace InsideEM
             User = user;
 
             Channel = channel;
+            
+            Unsafe.SkipInit(out CurrentMsg);
         }
         
         [MethodImpl(EMHelpers.InlineAndOptimize)]
@@ -102,11 +106,20 @@ namespace InsideEM
             User = PrevEM.User;
 
             Channel = PrevEM.Channel;
+            
+            Unsafe.SkipInit(out CurrentMsg);
         }
     }
 
-    public partial struct EmbedMenu
+    public partial struct EmbedMenu<UserT, ChannelT>
     {
+        private static readonly EmbedBuilder EMB;
+
+        static EmbedMenu()
+        {
+            EMB = new EmbedBuilder();
+        }
+        
         private const string CrossEmoji = "❎";
 
         private const string BackEmoji = "🔙";
@@ -115,10 +128,49 @@ namespace InsideEM
         
         private const string NavRightEmoji = "➡️";
 
+        private IUserMessage CurrentMsg;
+
         [MethodImpl(EMHelpers.InlineAndOptimize)]
-        internal void Compile()
+        internal async Task Compile(DiscordSocketClient Client)
         {
+            CurrentMsg = await Channel.SendMessageAsync(null, false, EMB.Build());
             
+            //Setup reaction handler
+
+            Client.ReactionAdded += OnReactionAdded;
+        }
+
+        [MethodImpl(EMHelpers.InlineAndOptimize)]
+        private Task OnReactionAdded(Cacheable<IUserMessage, ulong> Cacheable, ISocketMessageChannel SocketMessageChannel, SocketReaction React)
+        {
+            var ReactName = React.Emote.Name;
+            
+            if (ReactName == CrossEmoji)
+            {
+                return Task.CompletedTask;
+            }
+
+            if (ReactName == BackEmoji)
+            {
+                Back();
+                
+                return Task.CompletedTask;
+            }
+        }
+
+        [MethodImpl(EMHelpers.InlineAndOptimize)]
+        private void Back()
+        {
+            if (CurrentIndex == 0)
+            {
+                return;
+            }
+
+            ref var PrevEM = ref EMArr[unchecked(CurrentIndex - 1)];
+
+            PrevEM.Acts.Clear();
+            
+            PrevEM.InitAct(ref PrevEM);
         }
     }
 }
