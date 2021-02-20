@@ -59,13 +59,13 @@ namespace InsideEM.Collections
         }
 
         [MethodImpl(EMHelpers.InlineAndOptimize)]
-        public void Add(ref T Item)
+        public void Add(T Item)
         {
-            Add(Item);
+            Add(ref Item);
         }
         
         [MethodImpl(EMHelpers.InlineAndOptimize)]
-        public void Add(T Item)
+        public void Add(ref T Item)
         {
             if ((uint) unchecked(++ReadIndex) >= Arr.Length)
             {
@@ -90,13 +90,13 @@ namespace InsideEM.Collections
         }
         
         [MethodImpl(EMHelpers.InlineAndOptimize)]
-        public bool Remove(ref T Item)
+        public bool Remove(T Item)
         {
-            return Remove(Item);
+            return Remove(ref Item);
         }
         
         [MethodImpl(EMHelpers.InlineAndOptimize)]
-        public unsafe bool Remove(T Item)
+        public unsafe bool Remove(ref T Item)
         {
             if (ReadIndex == 0)
             {
