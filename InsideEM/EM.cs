@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -33,56 +34,24 @@ namespace InsideEM
         
         private EmbedMenuDel InitAct;
 
-        private EmbedMenu<UserT, ChannelT>[] EMArr;
-
-        private string Title, Desc;
-
-        private PooledList<EmbedMenuAct> Acts;
-
-        private int CurrentIndex, CurrentPageNumber, Pages, MaxElemsPerPage;
-
-        private UserT User;
-
-        private ChannelT Channel;
-
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
-        public EmbedMenu(EmbedMenuDel initAct, EmbedMenu<UserT, ChannelT>[] emArr, string title, string desc, PooledList<EmbedMenuAct> acts, UserT user, ChannelT channel)
-        {
-            InitAct = initAct;
-            
-            EMArr = emArr;
-
-            Title = title;
-
-            Desc = desc;
-
-            Acts = acts;
-
-            CurrentIndex = 0;
-            
-            //Page defaults
-            
-            CurrentPageNumber = 0;
-
-            MaxElemsPerPage = 5;
-
-            Pages = EMHelpers.DivideAndRoundUpFast(Acts.Count, MaxElemsPerPage);
-
-            //User creds
-            
-            User = user;
-
-            Channel = channel;
-            
-            Unsafe.SkipInit(out CurrentMsg);
-        }
+        public string Title, Desc;
         
+        public int CurrentEMIndex, CurrentPageNumber, Pages, MaxElemsPerPage;
+
+        internal PooledList<EmbedMenu<UserT, ChannelT>> EMHistory;
+        
+        internal PooledList<EmbedMenuAct> Acts;
+        
+        internal UserT User;
+
+        internal ChannelT Channel;
+
         [MethodImpl(EMHelpers.InlineAndOptimize)]
         public EmbedMenu(ref EmbedMenuAct ExecutedEMAct, ref EmbedMenu<UserT, ChannelT> PrevEM, string title, string desc)
         {
             InitAct = ExecutedEMAct.Act;
             
-            EMArr = PrevEM.EMArr;
+            EMHistory = PrevEM.EMHistory;
 
             Title = title;
 
@@ -90,7 +59,7 @@ namespace InsideEM
 
             Acts = PrevEM.Acts;
 
-            CurrentIndex = unchecked(++PrevEM.CurrentIndex);
+            CurrentEMIndex = unchecked(++PrevEM.CurrentEMIndex);
             
             //Page defaults
             
@@ -144,11 +113,24 @@ namespace InsideEM
         {
             var ReactName = React.Emote.Name;
             
-            if (ReactName == CrossEmoji)
-            {
-                return Task.CompletedTask;
-            }
+            //Starting index would be the PageNumber * MaxElemsPerPage
+            
+            //E.x. Assuming that MaxElemsPerPage is 5, page number of 0 would mean we start from Index 0 * 5 = 0...
+            //Page number of 1 would mean we start from 1 * 5 = 5
+            //Such is true since Array Indexes are zero-based
 
+            Acts.AsSpan(CurrentPageNumber, MaxElemsPerPage, out var PageActs);
+
+            foreach (var Act in PageActs)
+            {
+                if (Act.Emoji == ReactName)
+                {
+                    Act.Act(ref this);
+
+                    return Task.CompletedTask;
+                }
+            }
+            
             if (ReactName == BackEmoji)
             {
                 Back();
@@ -156,18 +138,25 @@ namespace InsideEM
                 return Task.CompletedTask;
             }
             
+            if (ReactName == CrossEmoji)
+            {
+                ssss
+                
+                return Task.CompletedTask;
+            }
+
             return Task.CompletedTask;
         }
 
         [MethodImpl(EMHelpers.InlineAndOptimize)]
         private void Back()
         {
-            if (CurrentIndex == 0)
+            if (CurrentEMIndex == 0)
             {
                 return;
             }
 
-            ref var PrevEM = ref EMArr[unchecked(CurrentIndex - 1)];
+            ref var PrevEM = ref EMHistory[unchecked(CurrentEMIndex - 1)];
 
             PrevEM.Acts.Clear();
             

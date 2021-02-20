@@ -27,6 +27,7 @@
       <option value="$PROJECT_DIR$/../../InsideEM/EM.cs" />
       <option value="$PROJECT_DIR$/../../InsideEM/PooledList.cs" />
       <option value="$PROJECT_DIR$/PooledListTests/Program.cs" />
+      <option value="$PROJECT_DIR$/../../InsideEM/Collections/PooledList.cs" />
     </changedPaths>
   </component>
   <component name="ProjectId" id="1ojU0icBQ49pvM7SDy2ctpFTyUj" />

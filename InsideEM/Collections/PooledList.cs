@@ -30,23 +30,27 @@ namespace InsideEM.Collections
             [MethodImpl(EMHelpers.InlineAndOptimize)]
             get
             {
-                if ((uint) Index >= Arr.Length)
+                var arr = Arr;
+                
+                if ((uint) Index >= arr.Length)
                 {
                     throw new IndexOutOfRangeException($"{Index} is out of range");
                 }
 
-                return Arr[Index];
+                return arr[Index];
             }
 
             [MethodImpl(EMHelpers.InlineAndOptimize)]
             set
             {
-                if ((uint) Index >= Arr.Length)
+                var arr = Arr;
+                
+                if ((uint) Index >= arr.Length)
                 {
                     throw new IndexOutOfRangeException($"{Index} is out of range");
                 }
 
-                Arr[Index] = value;
+                arr[Index] = value;
             }
         }
 
@@ -56,6 +60,19 @@ namespace InsideEM.Collections
             Arr = ArrayPool<T>.Shared.Rent(InitCapacity);
 
             ReadIndex = -1;
+        }
+        
+        [MethodImpl(EMHelpers.InlineAndOptimize)]
+        public ref T GetByRef(int Index)
+        {
+            var arr = Arr;
+                
+            if ((uint) Index >= arr.Length)
+            {
+                throw new IndexOutOfRangeException($"{Index} is out of range");
+            }
+
+            return ref arr[Index];
         }
 
         [MethodImpl(EMHelpers.InlineAndOptimize)]
