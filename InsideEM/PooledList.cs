@@ -51,6 +51,7 @@ namespace InsideEM
             }
         }
 
+        [MethodImpl(EMHelpers.InlineAndOptimize)]
         public PooledList(int InitCapacity)
         {
             Arr = ArrayPool<T>.Shared.Rent(InitCapacity);
@@ -96,7 +97,7 @@ namespace InsideEM
         }
         
         [MethodImpl(EMHelpers.InlineAndOptimize)]
-        public bool Remove(T Item)
+        public unsafe bool Remove(T Item)
         {
             if (ReadIndex == 0)
             {
@@ -124,31 +125,31 @@ namespace InsideEM
                     {
                         return true;
                     }
-                    
+
                     goto RemoveSlow;
                 }
 
-                Unsafe.Subtract(ref CurrentElemRef, 1);
+                CurrentElemRef = ref Unsafe.Subtract(ref CurrentElemRef, 1);
             }
 
             return false;
             
             RemoveSlow:
             {
-                //The total count that needs to be moved would be Diff
+                //The total count that needs to be moved would be Diff ( Bytes )
                 
-                //E.x. 0, 1, 2, 3, 4, 5 , 6, 7
+                //E.x. 0, 1, 2, 3, 4, 5, 6, 7
                 
                 //Say 4 is deleted... 7 - 4 = 3
                 
                 //We take the element next to CurrentElem, which is guaranteed to exist
                 //should CurrentElem != LastElem
 
-                var DestSpan = MemoryMarshal.CreateSpan(ref CurrentElemRef, Diff);
-                
-                Unsafe.Add(ref CurrentElemRef, 1);
+                var DestSpan = MemoryMarshal.CreateSpan(ref Unsafe.As<T, byte>(ref CurrentElemRef), Diff);
 
-                var SourceSpan = MemoryMarshal.CreateReadOnlySpan(ref CurrentElemRef, Diff);
+                CurrentElemRef = ref Unsafe.Add(ref CurrentElemRef, 1);
+
+                var SourceSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref CurrentElemRef), Diff);
                 
                 SourceSpan.CopyTo(DestSpan);
 
@@ -190,56 +191,42 @@ namespace InsideEM
             ReadIndex = -1;
         }
         
-        public struct Enumerator//: IEnumerator<T>
+        public ref struct RefEnumerator
         {
-            private T[] Arr;
+            private Span<T> Span;
+
+            private int CurrentIndex;
             
-            private uint CurrentIndex;
-
-            public Enumerator(T[] arr)
+            [MethodImpl(EMHelpers.InlineAndOptimize)]
+            public RefEnumerator(ref PooledList<T> List)
             {
-                Arr = arr;
+                List.AsSpan(out Span);
 
-                CurrentIndex = 0;
-                
-                Unsafe.SkipInit(out _Current);
+                CurrentIndex = -1;
             }
             
-            public T Current
+            public ref T Current
             {
                 [MethodImpl(EMHelpers.InlineAndOptimize)]
-                get => _Current;
+                get => ref Span[CurrentIndex];
             }
 
-            private T _Current;
-            
+            [MethodImpl(EMHelpers.InlineAndOptimize)]
             public bool MoveNext()
             {
-                if (CurrentIndex >= Arr.Length)
-                {
-                    return false;
-                }
-
-                _Current = Arr[CurrentIndex];
-
-                unchecked
-                {
-                    CurrentIndex++;
-                }
-                
-                return true;
+                return unchecked((uint)++CurrentIndex) < Span.Length;
             }
 
             public void Reset()
             {
-                CurrentIndex = 0;
+                CurrentIndex = -1;
             }
         } 
 
         [MethodImpl(EMHelpers.InlineAndOptimize)]
-        public Enumerator GetEnumerator()
+        public RefEnumerator GetEnumerator()
         {
-            return new Enumerator(Arr);
+            return new RefEnumerator(ref this);
         }
         
         [MethodImpl(EMHelpers.InlineAndOptimize)]

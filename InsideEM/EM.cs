@@ -156,6 +156,8 @@ namespace InsideEM
                 
                 return Task.CompletedTask;
             }
+            
+            return Task.CompletedTask;
         }
 
         [MethodImpl(EMHelpers.InlineAndOptimize)]

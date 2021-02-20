@@ -27,7 +27,7 @@ namespace InsideEM
         {
             GenEmbed((ref EmbedMenu<SocketUser, SocketTextChannel> EM) =>
             {
-                EM = new EmbedMenu<SocketUser, SocketTextChannel>()
+                EM = new EmbedMenu<SocketUser, SocketTextChannel>();
             });
         }
     }
