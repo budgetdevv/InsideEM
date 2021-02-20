@@ -8,16 +8,8 @@ namespace InsideEM.Collections
 {
     public struct PooledList<T>: IDisposable
     {
-        private static readonly bool TIsRefType;
-        
-        static PooledList()
-        {
-            TIsRefType = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
-        }
-        
         public int Count
         {
-            [MethodImpl(EMHelpers.InlineAndOptimize)]
             get => unchecked(ReadIndex + 1);
         }
 
@@ -27,34 +19,17 @@ namespace InsideEM.Collections
 
         public T this[int Index]
         {
-            [MethodImpl(EMHelpers.InlineAndOptimize)]
             get
             {
-                var arr = Arr;
-                
-                if ((uint) Index >= arr.Length)
-                {
-                    throw new IndexOutOfRangeException($"{Index} is out of range");
-                }
-
-                return arr[Index];
+                return Arr[Index];
             }
 
-            [MethodImpl(EMHelpers.InlineAndOptimize)]
             set
             {
-                var arr = Arr;
-                
-                if ((uint) Index >= arr.Length)
-                {
-                    throw new IndexOutOfRangeException($"{Index} is out of range");
-                }
-
-                arr[Index] = value;
+                Arr[Index] = value;
             }
         }
 
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         public PooledList(int InitCapacity)
         {
             Arr = ArrayPool<T>.Shared.Rent(InitCapacity);
@@ -62,26 +37,16 @@ namespace InsideEM.Collections
             ReadIndex = -1;
         }
         
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         public ref T GetByRef(int Index)
         {
-            var arr = Arr;
-                
-            if ((uint) Index >= arr.Length)
-            {
-                throw new IndexOutOfRangeException($"{Index} is out of range");
-            }
-
-            return ref arr[Index];
+            return ref Arr[Index];
         }
 
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         public void Add(T Item)
         {
             Add(ref Item);
         }
         
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         public void Add(ref T Item)
         {
             if ((uint) unchecked(++ReadIndex) >= Arr.Length)
@@ -92,7 +57,6 @@ namespace InsideEM.Collections
             Arr[ReadIndex] = Item;
         }
         
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private void Resize()
         {
             var OldArr = Arr;
@@ -105,14 +69,12 @@ namespace InsideEM.Collections
             
             ArrayPool<T>.Shared.Return(OldArr);
         }
-        
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
+
         public bool Remove(T Item)
         {
             return Remove(ref Item);
         }
         
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         public unsafe bool Remove(ref T Item)
         {
             if (ReadIndex == 0)
@@ -126,7 +88,7 @@ namespace InsideEM.Collections
 
             ref var CurrentElemRef = ref LastElemRef;
             
-            Unsafe.SkipInit(out int Diff);
+            int Diff = 0;
             
             while (!Unsafe.IsAddressLessThan(ref CurrentElemRef, ref FirstElemRef))
             {
@@ -175,7 +137,6 @@ namespace InsideEM.Collections
             }
         }
 
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         public bool RemoveLast()
         {
             if (ReadIndex == 0)
@@ -191,19 +152,16 @@ namespace InsideEM.Collections
             return true;
         }
 
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         public void AsSpan(out Span<T> Span)
         {
             Span = Arr.AsSpan(0, Count);
         }
         
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         public void AsSpan(int StartIndex, int count, out Span<T> Span)
         {
             Span = Arr.AsSpan(StartIndex, count);
         }
 
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         public void Clear()
         {
             ReadIndex = -1;
@@ -215,7 +173,6 @@ namespace InsideEM.Collections
 
             private int CurrentIndex;
             
-            [MethodImpl(EMHelpers.InlineAndOptimize)]
             public RefEnumerator(ref PooledList<T> List)
             {
                 List.AsSpan(out Span);
@@ -225,11 +182,9 @@ namespace InsideEM.Collections
             
             public ref T Current
             {
-                [MethodImpl(EMHelpers.InlineAndOptimize)]
                 get => ref Span[CurrentIndex];
             }
 
-            [MethodImpl(EMHelpers.InlineAndOptimize)]
             public bool MoveNext()
             {
                 return unchecked((uint)++CurrentIndex) < Span.Length;
@@ -241,16 +196,14 @@ namespace InsideEM.Collections
             }
         } 
 
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         public RefEnumerator GetEnumerator()
         {
             return new RefEnumerator(ref this);
         }
         
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         public void Dispose()
         {
-            if (TIsRefType) //Release stuff for GC to cleanup
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) //Release stuff for GC to cleanup
             {
                 Arr.AsSpan().Fill(default);
             }
