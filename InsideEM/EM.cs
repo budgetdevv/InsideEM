@@ -46,7 +46,6 @@ namespace InsideEM
 
         internal ChannelT Channel;
 
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         public EmbedMenu(ref EmbedMenuAct ExecutedEMAct, ref EmbedMenu<UserT, ChannelT> PrevEM, string title, string desc)
         {
             InitAct = ExecutedEMAct.Act;
@@ -75,10 +74,9 @@ namespace InsideEM
 
             Channel = PrevEM.Channel;
             
-            Unsafe.SkipInit(out CurrentMsg);
+            CurrentMsg = default;
         }
         
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         internal EmbedMenu(EmbedMenuDel initAct, UserT user, ChannelT channel, ref PooledList<EmbedMenu<UserT, ChannelT>> emHistory, ref PooledList<EmbedMenuAct> acts)
         {
             InitAct = initAct;
@@ -101,11 +99,11 @@ namespace InsideEM
 
             Pages = EMHelpers.DivideAndRoundUpFast(Acts.Count, MaxElemsPerPage);
             
-            Unsafe.SkipInit(out Title);
+            Title = default;
 
-            Unsafe.SkipInit(out Desc);
+            Desc = default;
 
-            Unsafe.SkipInit(out CurrentMsg);
+            CurrentMsg = default;
         }
     }
 
@@ -128,7 +126,6 @@ namespace InsideEM
 
         private IUserMessage CurrentMsg;
 
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         internal async Task Compile(DiscordSocketClient Client)
         {
             CurrentMsg = await Channel.SendMessageAsync(null, false, EMB.Build());
@@ -138,7 +135,6 @@ namespace InsideEM
             Client.ReactionAdded += OnReactionAdded;
         }
 
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         private Task OnReactionAdded(Cacheable<IUserMessage, ulong> Cacheable, ISocketMessageChannel SocketMessageChannel, SocketReaction React)
         {
             var ReactName = React.Emote.Name;
@@ -170,15 +166,12 @@ namespace InsideEM
             
             if (ReactName == CrossEmoji)
             {
-                ssss
-                
                 return Task.CompletedTask;
             }
 
             return Task.CompletedTask;
         }
 
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
         private void Back()
         {
             if (CurrentEMIndex == 0)
