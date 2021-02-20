@@ -77,6 +77,36 @@ namespace InsideEM
             
             Unsafe.SkipInit(out CurrentMsg);
         }
+        
+        [MethodImpl(EMHelpers.InlineAndOptimize)]
+        internal EmbedMenu(EmbedMenuDel initAct, UserT user, ChannelT channel, ref PooledList<EmbedMenu<UserT, ChannelT>> emHistory, ref PooledList<EmbedMenuAct> acts)
+        {
+            InitAct = initAct;
+
+            User = user;
+
+            Channel = channel;
+            
+            EMHistory = emHistory;
+
+            Acts = acts;
+            
+            CurrentEMIndex = 0;
+            
+            //Page defaults
+            
+            CurrentPageNumber = 0;
+
+            MaxElemsPerPage = 5;
+
+            Pages = EMHelpers.DivideAndRoundUpFast(Acts.Count, MaxElemsPerPage);
+            
+            Unsafe.SkipInit(out Title);
+
+            Unsafe.SkipInit(out Desc);
+
+            Unsafe.SkipInit(out CurrentMsg);
+        }
     }
 
     public partial struct EmbedMenu<UserT, ChannelT>
@@ -156,7 +186,7 @@ namespace InsideEM
                 return;
             }
 
-            ref var PrevEM = ref EMHistory[unchecked(CurrentEMIndex - 1)];
+            ref var PrevEM = ref EMHistory.GetByRef(unchecked(CurrentEMIndex - 1));
 
             PrevEM.Acts.Clear();
             

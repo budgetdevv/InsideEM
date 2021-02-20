@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Discord;
 using Discord.WebSocket;
+using InsideEM.Collections;
 
 namespace InsideEM
 {
@@ -39,14 +40,14 @@ namespace InsideEM
             where UserT : IUser
             where ChannelT : ITextChannel
         {
-            Unsafe.SkipInit(out EmbedMenu<UserT, ChannelT> EM);
+            //Allocate arrays!
 
-            //We have to populate context-related data for the first time
-            
-            EM.User = User;
+            var EMHistory = new PooledList<EmbedMenu<UserT, ChannelT>>(5);
 
-            EM.Channel = Channel;
-            
+            var Acts = new PooledList<EmbedMenu<UserT, ChannelT>.EmbedMenuAct>(5);
+
+            var EM = new EmbedMenu<UserT, ChannelT>(EMDel, User, Channel, ref EMHistory, ref Acts);
+                
             ref var EMRef = ref EM;
             
             EMDel.Invoke(ref EMRef);
