@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace InsideEM
+namespace InsideEM.Collections
 {
     public struct PooledList<T>: IDisposable
     {
@@ -145,11 +144,13 @@ namespace InsideEM
                 //We take the element next to CurrentElem, which is guaranteed to exist
                 //should CurrentElem != LastElem
 
-                var DestSpan = MemoryMarshal.CreateSpan(ref Unsafe.As<T, byte>(ref CurrentElemRef), Diff);
+                Diff /= Unsafe.SizeOf<T>();
+                
+                var DestSpan = MemoryMarshal.CreateSpan(ref CurrentElemRef, Diff);
 
                 CurrentElemRef = ref Unsafe.Add(ref CurrentElemRef, 1);
 
-                var SourceSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref CurrentElemRef), Diff);
+                var SourceSpan = MemoryMarshal.CreateReadOnlySpan(ref CurrentElemRef, Diff);
                 
                 SourceSpan.CopyTo(DestSpan);
 
