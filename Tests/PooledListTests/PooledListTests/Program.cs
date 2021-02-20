@@ -1,5 +1,5 @@
 ﻿using System;
-using InsideEM;
+using InsideEM.Collections;
 
 namespace PooledListTests
 {
@@ -7,9 +7,9 @@ namespace PooledListTests
     {
         static void Main(string[] args)
         {
-            //Test1();
+            Test1();
 
-            Test2();
+            //Test2();
         }
         
         private static void Test1()
