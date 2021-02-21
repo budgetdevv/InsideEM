@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace InsideEM
+namespace InsideEM.EmbedMenu
 {
     public static class EMHelpers
     {

@@ -1,12 +1,11 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using InsideEM.Collections;
 using InsideEM.Memory;
 
-namespace InsideEM
+namespace InsideEM.EmbedMenu
 {
     public partial struct EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory>
         where UserT: IUser 

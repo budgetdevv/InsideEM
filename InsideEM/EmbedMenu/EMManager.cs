@@ -5,7 +5,7 @@ using Discord;
 using Discord.WebSocket;
 using InsideEM.Collections;
 
-namespace InsideEM
+namespace InsideEM.EmbedMenu
 {
     public static class EMManager
     {
