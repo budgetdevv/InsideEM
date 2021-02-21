@@ -4,10 +4,7 @@ namespace InsideEM
 {
     public static class EMHelpers
     {
-        public const MethodImplOptions InlineAndOptimize =
-            MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization;
-        
-        [MethodImpl(InlineAndOptimize)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int DivideAndRoundUpFast(int Num, int Divisor)
         {
             unchecked

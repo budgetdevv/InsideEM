@@ -13,16 +13,22 @@ namespace InsideEM
 
         private static readonly ConcurrentDictionary<ulong, byte> ActiveUsers;
 
+        //TODO: Test for possible regression in performance due to inlining
+        
+        private const MethodImplOptions Opt = MethodImplOptions.AggressiveInlining;
+        
         static EMManager()
         {
             ActiveUsers = new ConcurrentDictionary<ulong, byte>();
         }
         
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
+        [MethodImpl(Opt)]
         public static void GenEmbed<UserT, ChannelT>(UserT User, ChannelT Channel, EmbedMenu<UserT, ChannelT>.EmbedMenuDel EMDel)
             where UserT : IUser
             where ChannelT : ITextChannel
         {
+            //TODO: Find out if Unsafe.SkipInit() would cause performance regression
+            
             Unsafe.SkipInit(out byte Trash);
             
             if (!ActiveUsers.TryAdd(User.Id, Trash))
@@ -35,7 +41,7 @@ namespace InsideEM
             GenEmbedUnchecked(User, Channel, EMDel);
         }
         
-        [MethodImpl(EMHelpers.InlineAndOptimize)]
+        [MethodImpl(Opt)]
         public static void GenEmbedUnchecked<UserT, ChannelT>(UserT User, ChannelT Channel, EmbedMenu<UserT, ChannelT>.EmbedMenuDel EMDel)
             where UserT : IUser
             where ChannelT : ITextChannel

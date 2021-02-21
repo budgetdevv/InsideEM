@@ -13,13 +13,17 @@ namespace InsideEM
     {
         public delegate void EmbedMenuDel(ref EmbedMenu<UserT, ChannelT> EM);
         
+        //TODO: Test for possible regression in performance due to inlining
+        
+        private const MethodImplOptions Opt = MethodImplOptions.AggressiveInlining;
+        
         public struct EmbedMenuAct
         {
             public string Emoji, Name, Desc;
 
             public EmbedMenuDel Act;
 
-            [MethodImpl(EMHelpers.InlineAndOptimize)]
+            [MethodImpl(Opt)]
             public EmbedMenuAct(string emoji, string name, string desc, EmbedMenuDel act)
             {
                 Emoji = emoji;
@@ -46,6 +50,7 @@ namespace InsideEM
 
         internal ChannelT Channel;
 
+        [MethodImpl(Opt)]
         public EmbedMenu(ref EmbedMenuAct ExecutedEMAct, ref EmbedMenu<UserT, ChannelT> PrevEM, string title, string desc)
         {
             InitAct = ExecutedEMAct.Act;
@@ -74,9 +79,12 @@ namespace InsideEM
 
             Channel = PrevEM.Channel;
             
-            CurrentMsg = default;
+            //Unsafe.SkipInit() would null the value anyway ( For its a ref type )...and as such isn't helpful
+
+            CurrentMsg = null;
         }
         
+        [MethodImpl(Opt)]
         internal EmbedMenu(EmbedMenuDel initAct, UserT user, ChannelT channel, ref PooledList<EmbedMenu<UserT, ChannelT>> emHistory, ref PooledList<EmbedMenuAct> acts)
         {
             InitAct = initAct;
@@ -99,11 +107,13 @@ namespace InsideEM
 
             Pages = EMHelpers.DivideAndRoundUpFast(Acts.Count, MaxElemsPerPage);
             
-            Title = default;
+            //Unsafe.SkipInit() would null the values anyway ( For its a ref type )...and as such isn't helpful
 
-            Desc = default;
+            Title = null;
 
-            CurrentMsg = default;
+            Desc = null;
+
+            CurrentMsg = null;
         }
     }
 
@@ -125,7 +135,7 @@ namespace InsideEM
         private const string NavRightEmoji = "➡️";
 
         private IUserMessage CurrentMsg;
-
+    
         internal async Task Compile(DiscordSocketClient Client)
         {
             CurrentMsg = await Channel.SendMessageAsync(null, false, EMB.Build());
@@ -135,6 +145,7 @@ namespace InsideEM
             Client.ReactionAdded += OnReactionAdded;
         }
 
+        [MethodImpl(Opt)]
         private Task OnReactionAdded(Cacheable<IUserMessage, ulong> Cacheable, ISocketMessageChannel SocketMessageChannel, SocketReaction React)
         {
             var ReactName = React.Emote.Name;
@@ -172,6 +183,7 @@ namespace InsideEM
             return Task.CompletedTask;
         }
 
+        [MethodImpl(Opt)]
         private void Back()
         {
             if (CurrentEMIndex == 0)

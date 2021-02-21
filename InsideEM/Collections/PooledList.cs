@@ -8,8 +8,13 @@ namespace InsideEM.Collections
 {
     public struct PooledList<T>: IDisposable
     {
+        //TODO: Test for possible regression in performance due to inlining
+        
+        private const MethodImplOptions Opt = MethodImplOptions.AggressiveInlining;
+        
         public int Count
         {
+            [MethodImpl(Opt)]
             get => unchecked(ReadIndex + 1);
         }
 
@@ -19,17 +24,14 @@ namespace InsideEM.Collections
 
         public T this[int Index]
         {
-            get
-            {
-                return Arr[Index];
-            }
+            [MethodImpl(Opt)]
+            get => Arr[Index];
 
-            set
-            {
-                Arr[Index] = value;
-            }
+            [MethodImpl(Opt)]
+            set => Arr[Index] = value;
         }
 
+        [MethodImpl(Opt)]
         public PooledList(int InitCapacity)
         {
             Arr = ArrayPool<T>.Shared.Rent(InitCapacity);
@@ -70,12 +72,14 @@ namespace InsideEM.Collections
             ArrayPool<T>.Shared.Return(OldArr);
         }
 
+        [MethodImpl(Opt)]
         public bool Remove(T Item)
         {
             return Remove(ref Item);
         }
         
-        public unsafe bool Remove(ref T Item)
+        [MethodImpl(Opt)]
+        public bool Remove(ref T Item)
         {
             if (ReadIndex == 0)
             {
@@ -137,6 +141,7 @@ namespace InsideEM.Collections
             }
         }
 
+        [MethodImpl(Opt)]
         public bool RemoveLast()
         {
             if (ReadIndex == 0)
@@ -152,16 +157,19 @@ namespace InsideEM.Collections
             return true;
         }
 
+        [MethodImpl(Opt)]
         public void AsSpan(out Span<T> Span)
         {
             Span = Arr.AsSpan(0, Count);
         }
         
+        [MethodImpl(Opt)]
         public void AsSpan(int StartIndex, int count, out Span<T> Span)
         {
             Span = Arr.AsSpan(StartIndex, count);
         }
 
+        [MethodImpl(Opt)]
         public void Clear()
         {
             ReadIndex = -1;
@@ -173,6 +181,7 @@ namespace InsideEM.Collections
 
             private int CurrentIndex;
             
+            [MethodImpl(Opt)]
             public RefEnumerator(ref PooledList<T> List)
             {
                 List.AsSpan(out Span);
@@ -182,9 +191,11 @@ namespace InsideEM.Collections
             
             public ref T Current
             {
+                [MethodImpl(Opt)]
                 get => ref Span[CurrentIndex];
             }
 
+            [MethodImpl(Opt)]
             public bool MoveNext()
             {
                 return unchecked((uint)++CurrentIndex) < Span.Length;
@@ -196,6 +207,7 @@ namespace InsideEM.Collections
             }
         } 
 
+        [MethodImpl(Opt)]
         public RefEnumerator GetEnumerator()
         {
             return new RefEnumerator(ref this);
