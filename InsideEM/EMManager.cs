@@ -48,9 +48,9 @@ namespace InsideEM
         {
             //Allocate arrays!
 
-            var EMHistory = new PooledList<EmbedMenu<UserT, ChannelT>>(5);
+            var EMHistory = new InsideList<EmbedMenu<UserT, ChannelT>>(5);
 
-            var Acts = new PooledList<EmbedMenu<UserT, ChannelT>.EmbedMenuAct>(5);
+            var Acts = new InsideList<EmbedMenu<UserT, ChannelT>.EmbedMenuAct>(5);
 
             var EM = new EmbedMenu<UserT, ChannelT>(EMDel, User, Channel, ref EMHistory, ref Acts);
                 

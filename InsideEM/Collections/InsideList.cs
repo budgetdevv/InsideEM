@@ -3,11 +3,22 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using InsideEM.Enumerators;
+using InsideEM.EqualityComparers;
+using InsideEM.Memory;
 
 namespace InsideEM.Collections
 {
-    public struct PooledList<T>: IDisposable
+    public struct InsideList<T, MemoryT> where MemoryT: 
+        struct, IInsideMemory<T>
     {
+        static InsideList()
+        {
+            DefEqualityComp = new InsideDefaultEqualityComparer<T>();
+        }
+        
+        private static InsideDefaultEqualityComparer<T> DefEqualityComp;
+        
         //TODO: Test for possible regression in performance due to inlining
         
         private const MethodImplOptions Opt = MethodImplOptions.AggressiveInlining;
@@ -20,72 +31,77 @@ namespace InsideEM.Collections
 
         private int ReadIndex;
 
-        private T[] Arr;
+        private MemoryT Memory;
 
         public T this[int Index]
         {
             [MethodImpl(Opt)]
-            get => Arr[Index];
+            get => Memory.Arr[Index];
 
             [MethodImpl(Opt)]
-            set => Arr[Index] = value;
+            set => Memory.Arr[Index] = value;
         }
-
+        
         [MethodImpl(Opt)]
-        public PooledList(int InitCapacity)
+        public InsideList(ref MemoryT memory)
         {
-            Arr = ArrayPool<T>.Shared.Rent(InitCapacity);
+            Memory = memory;
 
             ReadIndex = -1;
         }
-        
-        public ref T GetByRef(int Index)
+
+        //[MethodImpl(Opt)] Pointless to inline a slow path anyway...
+        public InsideList(int InitCapacity, IInsideMemoryAllocator<T, MemoryT> Allocator)
         {
-            return ref Arr[Index];
+            Allocator.Allocate(InitCapacity, out Memory);
+
+            ReadIndex = -1;
         }
 
-        public void Add(T Item)
+        [MethodImpl(Opt)]
+        public ref T GetByRef(int Index)
         {
-            Add(ref Item);
+            return ref Memory.Arr[Index];
         }
-        
-        public void Add(ref T Item)
+
+        [MethodImpl(Opt)]
+        public void Add<AllocatorT>(ref T Item, ref AllocatorT Allocator) 
+            where AllocatorT: struct, IInsideMemoryAllocator<T, MemoryT>
         {
+            var Arr = Memory.Arr;
+            
             if ((uint) unchecked(++ReadIndex) >= Arr.Length)
             {
-                Resize();
+                Resize(ref Allocator);
             }
 
             Arr[ReadIndex] = Item;
         }
-        
-        private void Resize()
-        {
-            var OldArr = Arr;
-            
-            var OldSpan = OldArr.AsSpan();
 
-            Arr = ArrayPool<T>.Shared.Rent(Arr.Length * 2);
-            
-            OldSpan.CopyTo(Arr);
-            
-            ArrayPool<T>.Shared.Return(OldArr);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void Resize<AllocatorT>(ref AllocatorT Allocator) 
+            where AllocatorT: struct, IInsideMemoryAllocator<T, MemoryT>
+        {
+            Allocator.ResizeNext(ref Memory);
         }
 
-        [MethodImpl(Opt)]
-        public bool Remove(T Item)
-        {
-            return Remove(ref Item);
-        }
-        
         [MethodImpl(Opt)]
         public bool Remove(ref T Item)
+        {
+            return Remove(ref Item, ref DefEqualityComp);
+        }
+
+        [MethodImpl(Opt)]
+        public bool Remove<EqualityComparerT>(ref T Item, ref EqualityComparerT Comp)
+            where EqualityComparerT: struct, IInsideEqualityComparer<T>
         {
             if (ReadIndex == 0)
             {
                 return false;
             }
 
+            var Arr = Memory.Arr;
+            
             ref var FirstElemRef = ref Arr[0];
 
             ref var LastElemRef = ref Arr[ReadIndex];
@@ -158,15 +174,15 @@ namespace InsideEM.Collections
         }
 
         [MethodImpl(Opt)]
-        public void AsSpan(out Span<T> Span)
+        public Span<T> AsSpan()
         {
-            Span = Arr.AsSpan(0, Count);
+            return Memory.Arr.AsSpan(0, Count);
         }
         
         [MethodImpl(Opt)]
-        public void AsSpan(int StartIndex, int count, out Span<T> Span)
+        public Span<T> AsSpan(int StartIndex, int count)
         {
-            Span = Arr.AsSpan(StartIndex, count);
+            return Memory.Arr.AsSpan(StartIndex, count);
         }
 
         [MethodImpl(Opt)]
@@ -174,53 +190,25 @@ namespace InsideEM.Collections
         {
             ReadIndex = -1;
         }
-        
-        public ref struct RefEnumerator
-        {
-            private Span<T> Span;
-
-            private int CurrentIndex;
-            
-            [MethodImpl(Opt)]
-            public RefEnumerator(ref PooledList<T> List)
-            {
-                List.AsSpan(out Span);
-
-                CurrentIndex = -1;
-            }
-            
-            public ref T Current
-            {
-                [MethodImpl(Opt)]
-                get => ref Span[CurrentIndex];
-            }
-
-            [MethodImpl(Opt)]
-            public bool MoveNext()
-            {
-                return unchecked((uint)++CurrentIndex) < Span.Length;
-            }
-
-            public void Reset()
-            {
-                CurrentIndex = -1;
-            }
-        } 
 
         [MethodImpl(Opt)]
-        public RefEnumerator GetEnumerator()
+        public RefEnumerator<T> GetEnumerator()
         {
-            return new RefEnumerator(ref this);
+            var Span = Memory.Arr.AsSpan(0, Count);
+            
+            return new RefEnumerator<T>(ref Span);
         }
         
-        public void Dispose()
+        [MethodImpl(Opt)]
+        public void Dispose<AllocatorT>(ref AllocatorT Allocator) 
+            where AllocatorT: struct, IInsideMemoryAllocator<T, MemoryT>
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) //Release stuff for GC to cleanup
             {
-                Arr.AsSpan().Fill(default);
+                Memory.Arr.AsSpan().Fill(default);
             }
             
-            ArrayPool<T>.Shared.Return(Arr);
+            Allocator.Recycle(ref Memory);
         }
     }
 }

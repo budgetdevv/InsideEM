@@ -4,14 +4,17 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using InsideEM.Collections;
+using InsideEM.Memory;
 
 namespace InsideEM
 {
-    public partial struct EmbedMenu<UserT, ChannelT>
+    public partial struct EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory>
         where UserT: IUser 
-        where ChannelT: ITextChannel
+        where ChannelT: ITextChannel 
+        where EMHistMemory : struct, IInsideMemory<EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory>>
+        where EMActsMemory : struct, IInsideMemory<EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
     {
-        public delegate void EmbedMenuDel(ref EmbedMenu<UserT, ChannelT> EM);
+        public delegate void EmbedMenuDel(ref EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory> EM);
         
         //TODO: Test for possible regression in performance due to inlining
         
@@ -42,16 +45,16 @@ namespace InsideEM
         
         public int CurrentEMIndex, CurrentPageNumber, Pages, MaxElemsPerPage;
 
-        internal PooledList<EmbedMenu<UserT, ChannelT>> EMHistory;
+        internal InsideList<EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory>, EMHistMemory> EMHistory;
         
-        internal PooledList<EmbedMenuAct> Acts;
-        
+        internal InsideList<EmbedMenuAct, EMActsMemory> Acts;
+
         internal UserT User;
 
         internal ChannelT Channel;
 
         [MethodImpl(Opt)]
-        public EmbedMenu(ref EmbedMenuAct ExecutedEMAct, ref EmbedMenu<UserT, ChannelT> PrevEM, string title, string desc)
+        public EmbedMenu(ref EmbedMenuAct ExecutedEMAct, ref EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory> PrevEM, string title, string desc)
         {
             InitAct = ExecutedEMAct.Act;
             
@@ -85,7 +88,7 @@ namespace InsideEM
         }
         
         [MethodImpl(Opt)]
-        internal EmbedMenu(EmbedMenuDel initAct, UserT user, ChannelT channel, ref PooledList<EmbedMenu<UserT, ChannelT>> emHistory, ref PooledList<EmbedMenuAct> acts)
+        internal EmbedMenu(EmbedMenuDel initAct, UserT user, ChannelT channel, ref InsideList<EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory>, EMHistMemory> emHistory, ref InsideList<EmbedMenuAct, EMActsMemory> acts)
         {
             InitAct = initAct;
 
@@ -117,7 +120,7 @@ namespace InsideEM
         }
     }
 
-    public partial struct EmbedMenu<UserT, ChannelT>
+    public partial struct EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory>
     {
         private static readonly EmbedBuilder EMB;
 
@@ -155,10 +158,8 @@ namespace InsideEM
             //E.x. Assuming that MaxElemsPerPage is 5, page number of 0 would mean we start from Index 0 * 5 = 0...
             //Page number of 1 would mean we start from 1 * 5 = 5
             //Such is true since Array Indexes are zero-based
-
-            Acts.AsSpan(CurrentPageNumber, MaxElemsPerPage, out var PageActs);
-
-            foreach (var Act in PageActs)
+            
+            foreach (var Act in Acts)
             {
                 if (Act.Emoji == ReactName)
                 {
