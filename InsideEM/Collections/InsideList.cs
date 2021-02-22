@@ -101,39 +101,34 @@ namespace InsideEM.Collections
             }
 
             var Arr = Memory.Arr;
-            
-            ref var FirstElemRef = ref Arr[0];
 
-            ref var LastElemRef = ref Arr[ReadIndex];
+            ref var FirstElemRef = ref MemoryMarshal.GetArrayDataReference(Arr);
+
+            ref var LastElemRef = ref Unsafe.Add(ref FirstElemRef, ReadIndex);
 
             ref var CurrentElemRef = ref LastElemRef;
-            
-            int Diff = 0;
-            
+
             while (!Unsafe.IsAddressLessThan(ref CurrentElemRef, ref FirstElemRef))
             {
-                if (Comp.Equals(ref Item, ref CurrentElemRef))
+                if (!Comp.Equals(ref Item, ref CurrentElemRef))
                 {
-                    unchecked
-                    {
-                        ReadIndex--;
-                    }
+                    CurrentElemRef = ref Unsafe.Subtract(ref CurrentElemRef, 1);
 
-                    if ((Diff = (int) Unsafe.ByteOffset(ref CurrentElemRef, ref LastElemRef)) == 0) //Fast path
-                    {
-                        return true;
-                    }
+                    continue;
+                }
+                
+                unchecked
+                {
+                    ReadIndex--;
+                }
+                    
+                var Diff = (int)Unsafe.ByteOffset(ref CurrentElemRef, ref LastElemRef);
 
-                    goto RemoveSlow;
+                if (Diff == 0) //Fast path, removed elem is last
+                {
+                    return true;
                 }
 
-                CurrentElemRef = ref Unsafe.Subtract(ref CurrentElemRef, 1);
-            }
-
-            return false;
-            
-            RemoveSlow:
-            {
                 //The total count that needs to be moved would be Diff ( Bytes )
                 
                 //E.x. 0, 1, 2, 3, 4, 5, 6, 7
@@ -155,6 +150,8 @@ namespace InsideEM.Collections
 
                 return true;
             }
+
+            return false;
         }
 
         [MethodImpl(Opt)]
