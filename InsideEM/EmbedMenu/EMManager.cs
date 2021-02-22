@@ -85,11 +85,10 @@ namespace InsideEM.EmbedMenu
         }
 
         [MethodImpl(Opt)]
-        public static void EMCancel<UserT, ChannelT, EMHistMemory, EMActsMemory>(ref EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory> EM) 
-            where UserT : IUser 
+        public static void EMCancel<ChannelT, EMHistMemory, EMActsMemory>(ref EMRaw<ChannelT, EMHistMemory, EMActsMemory> EM)
             where ChannelT : ITextChannel
-            where EMHistMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>>
-            where EMActsMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
+            where EMHistMemory : struct, IInsideMemory<EMRaw<ChannelT, EMHistMemory, EMActsMemory>>
+            where EMActsMemory : struct, IInsideMemory<EMRaw<ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
         {
             EM.Decompile();
 

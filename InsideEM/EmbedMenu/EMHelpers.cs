@@ -26,11 +26,10 @@ namespace InsideEM.EmbedMenu
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetStartingIndex<UserT, ChannelT, EMHistMemory, EMActsMemory>(ref EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory> EM) 
-            where UserT : IUser 
+        public static int GetStartingIndex<ChannelT, EMHistMemory, EMActsMemory>(ref EMRaw<ChannelT, EMHistMemory, EMActsMemory> EM)
             where ChannelT : ITextChannel
-            where EMHistMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>>
-            where EMActsMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
+            where EMHistMemory : struct, IInsideMemory<EMRaw<ChannelT, EMHistMemory, EMActsMemory>>
+            where EMActsMemory : struct, IInsideMemory<EMRaw<ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
         {
             //Starting index would be the PageNumber * MaxElemsPerPage
             
@@ -42,11 +41,10 @@ namespace InsideEM.EmbedMenu
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetPageReactCount<UserT, ChannelT, EMHistMemory, EMActsMemory>(int StartingIndex, ref EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory> EM) 
-            where UserT : IUser 
+        public static int GetPageReactCount<ChannelT, EMHistMemory, EMActsMemory>(int StartingIndex, ref EMRaw<ChannelT, EMHistMemory, EMActsMemory> EM)
             where ChannelT : ITextChannel
-            where EMHistMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>>
-            where EMActsMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
+            where EMHistMemory : struct, IInsideMemory<EMRaw<ChannelT, EMHistMemory, EMActsMemory>>
+            where EMActsMemory : struct, IInsideMemory<EMRaw<ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
         {
             //If count = 2, and we start from Index 1 ( Which points to the second elem ), then the react count would be 2 - 1 = 1
             
@@ -56,13 +54,12 @@ namespace InsideEM.EmbedMenu
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool CanEditMsg<UserT, ChannelT, EMHistMemory, EMActsMemory>(DiscordSocketClient Client, ref EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory> EM)
-            where UserT : IUser 
+        public static bool CanEditMsg<ChannelT, EMHistMemory, EMActsMemory>(DiscordSocketClient Client, ref EMRaw<ChannelT, EMHistMemory, EMActsMemory> EM)
             where ChannelT : ITextChannel
-            where EMHistMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>>
-            where EMActsMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
+            where EMHistMemory : struct, IInsideMemory<EMRaw<ChannelT, EMHistMemory, EMActsMemory>>
+            where EMActsMemory : struct, IInsideMemory<EMRaw<ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
         {
-            if (!EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>.IsGuildChannel)
+            if (!EMRaw<ChannelT, EMHistMemory, EMActsMemory>.IsGuildChannel)
             {
                 return false;
             }
@@ -75,15 +72,14 @@ namespace InsideEM.EmbedMenu
         //TODO: Find out if stuff before await keyword gets inlined
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static async Task SendMessageWithPrev<UserT, ChannelT, EMHistMemory, EMActsMemory>(EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory> Prev, EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory> Current, EmbedBuilder EMB)
-            where UserT : IUser 
+        public static async Task SendMessageWithPrev<ChannelT, EMHistMemory, EMActsMemory>(EMRaw<ChannelT, EMHistMemory, EMActsMemory> Prev, EMRaw<ChannelT, EMHistMemory, EMActsMemory> Current, EmbedBuilder EMB)
             where ChannelT : ITextChannel
-            where EMHistMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>>
-            where EMActsMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
+            where EMHistMemory : struct, IInsideMemory<EMRaw<ChannelT, EMHistMemory, EMActsMemory>>
+            where EMActsMemory : struct, IInsideMemory<EMRaw<ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
         {
             Prev.Decompile();
             
-            if (!EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>.IsGuildChannel)
+            if (!EMRaw<ChannelT, EMHistMemory, EMActsMemory>.IsGuildChannel)
             {
                 goto NoEdit;
             }

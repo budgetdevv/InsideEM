@@ -9,7 +9,7 @@ using InsideEM.Memory;
 
 namespace InsideEM.EmbedMenu
 {
-    public partial struct EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>
+    public partial struct EMRaw<ChannelT, EMHistMemory, EMActsMemory>
     {
     
         internal static readonly bool IsGuildChannel;
@@ -20,13 +20,12 @@ namespace InsideEM.EmbedMenu
         }
     }
     
-    public partial struct EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>
-        where UserT: IUser 
+    public partial struct EMRaw<ChannelT, EMHistMemory, EMActsMemory>
         where ChannelT: ITextChannel 
-        where EMHistMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>>
-        where EMActsMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
+        where EMHistMemory : struct, IInsideMemory<EMRaw<ChannelT, EMHistMemory, EMActsMemory>>
+        where EMActsMemory : struct, IInsideMemory<EMRaw<ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
     {
-        public delegate void EmbedMenuDel(ref EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory> EM);
+        public delegate void EmbedMenuDel(ref EMRaw<ChannelT, EMHistMemory, EMActsMemory> EM);
         
         //TODO: Test for possible regression in performance due to inlining
         
@@ -56,16 +55,16 @@ namespace InsideEM.EmbedMenu
         
         public int CurrentEMIndex, CurrentPageNumber, Pages, MaxElemsPerPage;
 
-        internal InsideList<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>, EMHistMemory> EMHistory;
+        internal InsideList<EMRaw<ChannelT, EMHistMemory, EMActsMemory>, EMHistMemory> EMHistory;
         
         internal InsideList<EmbedMenuAct, EMActsMemory> Acts;
 
-        internal UserT User;
+        internal SocketGuildUser User;
 
         internal ChannelT Channel;
 
         [MethodImpl(Opt)]
-        public EMRaw(ref EmbedMenuAct ExecutedEMAct, ref EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory> PrevEM, string title, string desc)
+        public EMRaw(ref EmbedMenuAct ExecutedEMAct, ref EMRaw<ChannelT, EMHistMemory, EMActsMemory> PrevEM, string title, string desc)
         {
             InitAct = ExecutedEMAct.Act;
             
@@ -99,7 +98,7 @@ namespace InsideEM.EmbedMenu
         }
         
         [MethodImpl(Opt)]
-        internal EMRaw(EmbedMenuDel initAct, UserT user, ChannelT channel, ref InsideList<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>, EMHistMemory> emHistory, ref InsideList<EmbedMenuAct, EMActsMemory> acts)
+        internal EMRaw(EmbedMenuDel initAct, SocketGuildUser user, ChannelT channel, ref InsideList<EMRaw<ChannelT, EMHistMemory, EMActsMemory>, EMHistMemory> emHistory, ref InsideList<EmbedMenuAct, EMActsMemory> acts)
         {
             InitAct = initAct;
 
@@ -131,7 +130,7 @@ namespace InsideEM.EmbedMenu
         }
     }
 
-    public partial struct EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>
+    public partial struct EMRaw<ChannelT, EMHistMemory, EMActsMemory>
     {
         private const string CrossEmoji = "❎";
 
