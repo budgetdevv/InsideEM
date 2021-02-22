@@ -112,7 +112,7 @@ namespace InsideEM.Collections
             
             while (!Unsafe.IsAddressLessThan(ref CurrentElemRef, ref FirstElemRef))
             {
-                if (EqualityComparer<T>.Default.Equals(Item, CurrentElemRef))
+                if (Comp.Equals(ref Item, ref CurrentElemRef))
                 {
                     unchecked
                     {
