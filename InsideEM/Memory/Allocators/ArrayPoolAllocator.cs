@@ -56,10 +56,38 @@ namespace InsideEM.Memory.Allocators
         public void Resize(int NewSize, ref ArrayPoolMemory<T> Memory)
         {
             ref var OldMem = ref Memory;
+
+            var OldSpan = OldMem.Arr.AsSpan();
             
             Allocate(NewSize, out Memory);
             
-            OldMem.CopyTo(Memory);
+            OldSpan.CopyTo(Memory.Arr);
+            
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                OldSpan.Fill(default);
+            }
+
+            Recycle(ref OldMem);
+        }
+        
+        [MethodImpl(Opt)]
+        public void Resize(int NewSize, ref ArrayPoolMemory<T> Memory, ref Span<T> Span)
+        {
+            ref var OldMem = ref Memory;
+            
+            Allocate(NewSize, out Memory);
+
+            var NewSpan = Memory.Arr.AsSpan();
+            
+            Span.CopyTo(NewSpan);
+
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                Span.Fill(default);
+            }
+
+            //Span = NewSpan; //Would have to .Slice() the new span anyway...to copy starting from a specific index
 
             Recycle(ref OldMem);
         }
@@ -71,7 +99,15 @@ namespace InsideEM.Memory.Allocators
             
             Resize(NewSize, ref Memory);
         }
-        
+
+        [MethodImpl(Opt)]
+        public void ResizeNext(ref ArrayPoolMemory<T> Memory, ref Span<T> Span)
+        {
+            var NewSize = unchecked(Memory.Arr.Length * 2);
+            
+            Resize(NewSize, ref Memory, ref Span);
+        }
+
         [MethodImpl(Opt)]
         public void Dispose()
         {

@@ -11,6 +11,10 @@ namespace InsideEM.Memory
         
         public void Resize(int NewSize, ref MemoryT Memory);
         
+        public void Resize(int NewSize, ref MemoryT Memory, ref Span<T> Span);
+        
         public void ResizeNext(ref MemoryT Memory);
+        
+        public void ResizeNext(ref MemoryT Memory, ref Span<T> Span);
     }
 }

@@ -31,15 +31,12 @@ namespace InsideEM.Collections
 
         private int ReadIndex;
 
-        private MemoryT Memory;
+        internal MemoryT Memory;
 
-        public T this[int Index]
+        public ref T this[int Index]
         {
             [MethodImpl(Opt)]
-            get => Memory.Arr[Index];
-
-            [MethodImpl(Opt)]
-            set => Memory.Arr[Index] = value;
+            get => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Memory.Arr), Index);
         }
         
         [MethodImpl(Opt)]
@@ -64,19 +61,41 @@ namespace InsideEM.Collections
         {
             var Arr = Memory.Arr;
             
-            if ((uint) unchecked(++ReadIndex) >= Arr.Length)
+            //TODO: Check if unchecked would affect codegen 
+            
+            if (unchecked((uint)++ReadIndex) >= unchecked((uint)Arr.Length))
             {
-                Resize(ref Allocator);
+                Resize(ref Allocator, out Arr);
+
+                Arr = Memory.Arr;
             }
 
             Arr[ReadIndex] = Item;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private void Resize<AllocatorT>(ref AllocatorT Allocator) 
+        private void Resize<AllocatorT>(ref AllocatorT Allocator, out T[] Arr) 
             where AllocatorT: struct, IInsideMemoryAllocator<T, MemoryT>
         {
-            Allocator.ResizeNext(ref Memory);
+            var Span = Memory.Arr.AsSpan(0, Count);
+
+            Allocator.ResizeNext(ref Memory, ref Span);
+
+            Arr = Memory.Arr;
+        }
+        
+        [MethodImpl(Opt)]
+        public void Dequeue()
+        {
+            if (ReadIndex == -1)
+            {
+                return;
+            }
+
+            unchecked
+            {
+                ReadIndex--;
+            }
         }
         
         [MethodImpl(Opt)]

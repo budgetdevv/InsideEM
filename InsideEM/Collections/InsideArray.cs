@@ -16,7 +16,7 @@ namespace InsideEM.Collections
         
         private const MethodImplOptions Opt = MethodImplOptions.AggressiveInlining;
         
-        private MemoryT Memory;
+        internal MemoryT Memory;
 
         [MethodImpl(Opt)]
         public InsideArray(ref MemoryT memory)
