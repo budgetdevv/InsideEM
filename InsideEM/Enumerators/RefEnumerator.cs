@@ -35,5 +35,11 @@ namespace InsideEM.Enumerators
         {
             CurrentIndex = -1;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RefEnumerator<T> GetEnumerator()
+        {
+            return this;
+        }
     } 
 }

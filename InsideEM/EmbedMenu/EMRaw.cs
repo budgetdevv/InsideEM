@@ -1,4 +1,6 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -7,23 +9,33 @@ using InsideEM.Memory;
 
 namespace InsideEM.EmbedMenu
 {
-    public partial struct EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory>
+    public partial struct EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>
+    {
+    
+        internal static readonly bool IsGuildChannel;
+        
+        static EMRaw()
+        {
+            IsGuildChannel = typeof(ChannelT) == typeof(SocketTextChannel);     
+        }
+    }
+    
+    public partial struct EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>
         where UserT: IUser 
         where ChannelT: ITextChannel 
-        where EMHistMemory : struct, IInsideMemory<EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory>>
-        where EMActsMemory : struct, IInsideMemory<EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
+        where EMHistMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>>
+        where EMActsMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
     {
-        public delegate void EmbedMenuDel(ref EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory> EM);
+        public delegate void EmbedMenuDel(ref EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory> EM);
         
         //TODO: Test for possible regression in performance due to inlining
         
         private const MethodImplOptions Opt = MethodImplOptions.AggressiveInlining;
-        
-        public struct EmbedMenuAct
+        public readonly struct EmbedMenuAct
         {
-            public string Emoji, Name, Desc;
+            public readonly string Emoji, Name, Desc;
 
-            public EmbedMenuDel Act;
+            public readonly EmbedMenuDel Act;
 
             [MethodImpl(Opt)]
             public EmbedMenuAct(string emoji, string name, string desc, EmbedMenuDel act)
@@ -44,7 +56,7 @@ namespace InsideEM.EmbedMenu
         
         public int CurrentEMIndex, CurrentPageNumber, Pages, MaxElemsPerPage;
 
-        internal InsideList<EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory>, EMHistMemory> EMHistory;
+        internal InsideList<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>, EMHistMemory> EMHistory;
         
         internal InsideList<EmbedMenuAct, EMActsMemory> Acts;
 
@@ -53,7 +65,7 @@ namespace InsideEM.EmbedMenu
         internal ChannelT Channel;
 
         [MethodImpl(Opt)]
-        public EmbedMenu(ref EmbedMenuAct ExecutedEMAct, ref EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory> PrevEM, string title, string desc)
+        public EMRaw(ref EmbedMenuAct ExecutedEMAct, ref EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory> PrevEM, string title, string desc)
         {
             InitAct = ExecutedEMAct.Act;
             
@@ -87,7 +99,7 @@ namespace InsideEM.EmbedMenu
         }
         
         [MethodImpl(Opt)]
-        internal EmbedMenu(EmbedMenuDel initAct, UserT user, ChannelT channel, ref InsideList<EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory>, EMHistMemory> emHistory, ref InsideList<EmbedMenuAct, EMActsMemory> acts)
+        internal EMRaw(EmbedMenuDel initAct, UserT user, ChannelT channel, ref InsideList<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>, EMHistMemory> emHistory, ref InsideList<EmbedMenuAct, EMActsMemory> acts)
         {
             InitAct = initAct;
 
@@ -119,15 +131,8 @@ namespace InsideEM.EmbedMenu
         }
     }
 
-    public partial struct EmbedMenu<UserT, ChannelT, EMHistMemory, EMActsMemory>
+    public partial struct EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>
     {
-        private static readonly EmbedBuilder EMB;
-
-        static EmbedMenu()
-        {
-            EMB = new EmbedBuilder();
-        }
-        
         private const string CrossEmoji = "❎";
 
         private const string BackEmoji = "🔙";
@@ -136,38 +141,59 @@ namespace InsideEM.EmbedMenu
         
         private const string NavRightEmoji = "➡️";
 
-        private IUserMessage CurrentMsg;
-    
-        internal async Task Compile(DiscordSocketClient Client)
+        internal IUserMessage CurrentMsg;
+
+        [MethodImpl(Opt)]
+        public void AddReaction<AllocatorT>(string Emoji, string FieldTitle, string FieldDesc, EmbedMenuDel Act, ref AllocatorT Allocator) 
+            where AllocatorT: struct, IInsideMemoryAllocator<EmbedMenuAct, EMActsMemory>
         {
+            var NewAct = new EmbedMenuAct(Emoji, FieldTitle, FieldDesc, Act);
+            
+            Acts.Add(ref NewAct, ref Allocator);
+        }
+        
+        [MethodImpl(Opt)]
+        public void RemoveReaction(string Emoji)
+        {
+            foreach (ref var Act in Acts)
+            {
+                if (Act.Emoji == Emoji)
+                {
+                    Acts.Remove(ref Act);
+                    
+                    return;
+                }
+            }
+        }
+        
+        [MethodImpl(Opt)]
+        public void RemoveAllReactions()
+        {
+            Acts.Clear();
+        }
+        
+        internal async Task Compile()
+        {
+            var EMB = EMManager.GetBuilder();
+            
             CurrentMsg = await Channel.SendMessageAsync(null, false, EMB.Build());
             
             //Setup reaction handler
 
-            Client.ReactionAdded += OnReactionAdded;
+            EMManager.Client.ReactionAdded += OnReactionAdded;
         }
 
+        [MethodImpl(Opt)]
+        internal void Decompile()
+        {
+            EMManager.Client.ReactionAdded -= OnReactionAdded;
+        }
+        
         [MethodImpl(Opt)]
         private Task OnReactionAdded(Cacheable<IUserMessage, ulong> Cacheable, ISocketMessageChannel SocketMessageChannel, SocketReaction React)
         {
             var ReactName = React.Emote.Name;
-            
-            //Starting index would be the PageNumber * MaxElemsPerPage
-            
-            //E.x. Assuming that MaxElemsPerPage is 5, page number of 0 would mean we start from Index 0 * 5 = 0...
-            //Page number of 1 would mean we start from 1 * 5 = 5
-            //Such is true since Array Indexes are zero-based
-            
-            foreach (var Act in Acts)
-            {
-                if (Act.Emoji == ReactName)
-                {
-                    Act.Act(ref this);
 
-                    return Task.CompletedTask;
-                }
-            }
-            
             if (ReactName == BackEmoji)
             {
                 Back();
@@ -180,7 +206,40 @@ namespace InsideEM.EmbedMenu
                 return Task.CompletedTask;
             }
 
+            var StartingIndex = EMHelpers.GetStartingIndex(ref this);
+            
+            foreach (ref var Act in Acts.GetEnumerator(StartingIndex, EMHelpers.GetPageReactCount(StartingIndex, ref this)))
+            {
+                if (Act.Emoji == ReactName)
+                {
+                    continue;
+                }
+                
+                ref var EMRef = ref this;
+
+                Act.Act(ref EMRef);
+
+                if (Unsafe.IsNullRef(ref EMRef))
+                {
+                    EMManager.EMCancel(ref this);
+                    
+                    return Task.CompletedTask;
+                }
+                
+                if (Unsafe.AreSame(ref EMRef, ref this))
+                {
+                    return Task.CompletedTask;
+                }
+                
+                goto Success;
+            }
+            
             return Task.CompletedTask;
+            
+            Success:
+            {
+                return Task.CompletedTask;
+            }
         }
 
         [MethodImpl(Opt)]
@@ -193,6 +252,8 @@ namespace InsideEM.EmbedMenu
 
             ref var PrevEM = ref EMHistory.GetByRef(unchecked(CurrentEMIndex - 1));
 
+            //We want to clear up previous acts
+            
             PrevEM.Acts.Clear();
             
             PrevEM.InitAct(ref PrevEM);

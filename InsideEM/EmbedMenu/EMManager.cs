@@ -1,17 +1,22 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Discord;
 using Discord.WebSocket;
 using InsideEM.Collections;
+using InsideEM.Memory;
 
 namespace InsideEM.EmbedMenu
 {
     public static class EMManager
     {
-        private static readonly DiscordSocketClient Client;
+        internal static readonly DiscordSocketClient Client;
 
         private static readonly ConcurrentDictionary<ulong, byte> ActiveUsers;
+
+        [ThreadStatic]
+        private static EmbedBuilder EMB;
 
         //TODO: Test for possible regression in performance due to inlining
         
@@ -20,6 +25,17 @@ namespace InsideEM.EmbedMenu
         static EMManager()
         {
             ActiveUsers = new ConcurrentDictionary<ulong, byte>();
+        }
+
+        [MethodImpl(Opt)]
+        public static EmbedBuilder GetBuilder()
+        {
+            if (EMB == null)
+            {
+                return EMB = new EmbedBuilder();
+            }
+
+            return EMB;
         }
         
         [MethodImpl(Opt)]
@@ -68,6 +84,20 @@ namespace InsideEM.EmbedMenu
             _ = EMRef.Compile(Client);
         }
 
+        [MethodImpl(Opt)]
+        public static void EMCancel<UserT, ChannelT, EMHistMemory, EMActsMemory>(ref EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory> EM) 
+            where UserT : IUser 
+            where ChannelT : ITextChannel
+            where EMHistMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>>
+            where EMActsMemory : struct, IInsideMemory<EMRaw<UserT, ChannelT, EMHistMemory, EMActsMemory>.EmbedMenuAct>
+        {
+            EM.Decompile();
+
+            _ = EM.CurrentMsg.DeleteAsync();
+
+            ActiveUsers.Remove(EM.User.Id, out _);
+        }
+        
         // public static void LetsGo()
         // {
         //     GenEmbed((ref EmbedMenu<SocketUser, SocketTextChannel> EM) =>

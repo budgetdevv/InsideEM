@@ -200,6 +200,14 @@ namespace InsideEM.Collections
         }
         
         [MethodImpl(Opt)]
+        public RefEnumerator<T> GetEnumerator(int StartingIndex, int count)
+        {
+            var Span = Memory.Arr.AsSpan(StartingIndex, count);
+            
+            return new RefEnumerator<T>(ref Span);
+        }
+        
+        [MethodImpl(Opt)]
         public void Dispose<AllocatorT>(ref AllocatorT Allocator) 
             where AllocatorT: struct, IInsideMemoryAllocator<T, MemoryT>
         {
