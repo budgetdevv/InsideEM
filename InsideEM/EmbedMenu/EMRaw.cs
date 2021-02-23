@@ -218,12 +218,14 @@ namespace InsideEM.EmbedMenu
 
                 Act.Act(ref EMRef);
 
-                if (Unsafe.IsNullRef(ref EMRef))
-                {
-                    EMManager.EMCancel(ref this);
-                    
-                    return Task.CompletedTask;
-                }
+                // TODO: Fix this - you can't reassign a ref!
+                
+                // if (Unsafe.IsNullRef(ref EMRef))
+                // {
+                //     EMManager.EMCancel(ref this);
+                //     
+                //     return Task.CompletedTask;
+                // }
                 
                 if (Unsafe.AreSame(ref EMRef, ref this))
                 {

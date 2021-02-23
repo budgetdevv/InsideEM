@@ -11,7 +11,7 @@ namespace InsideEM.Collections
     public struct InsideList<T, MemoryT> where MemoryT: 
         struct, IInsideMemory<T>
     {
-        //General Comparison: https://shorturl.at/akmDQ
+        //General Comparison: https://shorturl.at/fDMT9
         
         static InsideList()
         {
