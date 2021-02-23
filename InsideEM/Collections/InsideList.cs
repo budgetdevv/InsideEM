@@ -34,35 +34,32 @@ namespace InsideEM.Collections
 
         internal MemoryT Memory;
 
-        public T this[int Index]
+        public T this[int Index] //Users should try not to read outside of memory
         {
-            //The bound checks benefit this array in 2 ways: 
-            //  - We don't have to do if (Index < 0) https://stackoverflow.com/questions/29343533/is-it-more-efficient-to-perform-a-range-check-by-casting-to-uint-instead-of-chec
-            //  - We throw an exception if user tries to read / write stuff that doesn't exist in the array; this is paramount as Dispose() / Resize() gets rid of GC references
-            //via .AsSpan(0, Count).Fill(default). Consequentially, stuff written outside would not be cleared!
-
-            //Unchecked gets rid of overflow checking for cast to uint
-            
             [MethodImpl(Opt)]
             get
             {
+                var Arr = Memory.Arr;
+
                 if (unchecked((uint)Index) > unchecked((uint)ReadIndex))
                 {
                     throw new IndexOutOfRangeException();
                 }
-                
-                return Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Memory.Arr), Index);
+
+                return Arr[Index];
             }
 
             [MethodImpl(Opt)]
             set
             {
+                var Arr = Memory.Arr;
+
                 if (unchecked((uint)Index) > unchecked((uint)ReadIndex))
                 {
                     throw new IndexOutOfRangeException();
                 }
 
-                Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Memory.Arr), Index) = value;
+                Arr[Index] = value;
             }
         }
         
@@ -83,7 +80,7 @@ namespace InsideEM.Collections
         }
 
         [MethodImpl(Opt)]
-        public ref T GetByRef(int Index)
+        public ref T GetByRef(int Index) //Fastest access, at the expense of safety
         {
             return ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Memory.Arr), ReadIndex);
         }
