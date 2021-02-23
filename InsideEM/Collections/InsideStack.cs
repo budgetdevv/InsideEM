@@ -33,7 +33,7 @@ namespace InsideEM.Collections
 
         internal MemoryT Memory;
 
-        public ref T this[int Index]
+        public ref T this[int Index] //A stack isn't accessed by an indexer, conventionally speaking
         {
             [MethodImpl(Opt)]
             get => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Memory.Arr), Index);
@@ -60,17 +60,18 @@ namespace InsideEM.Collections
             where AllocatorT: struct, IInsideMemoryAllocator<T, MemoryT>
         {
             var Arr = Memory.Arr;
-            
-            //TODO: Check if unchecked would affect codegen 
-            
-            if (unchecked((uint)++ReadIndex) >= unchecked((uint)Arr.Length))
+
+            unchecked
             {
-                Resize(ref Allocator, out Arr);
+                var NewReadIndex = ++ReadIndex;
+            
+                if ((uint)NewReadIndex >= (uint)Arr.Length)
+                {
+                    Resize(ref Allocator, out Arr);
+                }
 
-                Arr = Memory.Arr;
+                Arr[NewReadIndex] = Item;
             }
-
-            Arr[ReadIndex] = Item;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

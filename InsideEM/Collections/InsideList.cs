@@ -11,6 +11,8 @@ namespace InsideEM.Collections
     public struct InsideList<T, MemoryT> where MemoryT: 
         struct, IInsideMemory<T>
     {
+        //General Comparison: https://shorturl.at/akmDQ
+        
         static InsideList()
         {
             DefEqualityComp = new InsideDefaultEqualityComparer<T>();
@@ -44,25 +46,23 @@ namespace InsideEM.Collections
             [MethodImpl(Opt)]
             get
             {
-                //TODO: Check if unchecked would affect codegen
-                
-                if (unchecked((uint)Index) >= unchecked((uint)Count))
+                if (unchecked((uint)Index) > unchecked((uint)ReadIndex))
                 {
                     throw new IndexOutOfRangeException();
                 }
                 
-                return Memory.Arr[Index];
+                return Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Memory.Arr), Index);
             }
 
             [MethodImpl(Opt)]
             set
             {
-                if (unchecked((uint)Index) >= unchecked((uint)Count))
+                if (unchecked((uint)Index) > unchecked((uint)ReadIndex))
                 {
                     throw new IndexOutOfRangeException();
                 }
-                
-                Memory.Arr[Index] = value;
+
+                Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Memory.Arr), Index) = value;
             }
         }
         
@@ -85,7 +85,7 @@ namespace InsideEM.Collections
         [MethodImpl(Opt)]
         public ref T GetByRef(int Index)
         {
-            return ref Memory.Arr[Index];
+            return ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Memory.Arr), ReadIndex);
         }
 
         [MethodImpl(Opt)]
@@ -93,15 +93,18 @@ namespace InsideEM.Collections
             where AllocatorT: struct, IInsideMemoryAllocator<T, MemoryT>
         {
             var Arr = Memory.Arr;
-            
-            //TODO: Check if unchecked would affect codegen
-            
-            if (unchecked((uint)++ReadIndex) >= unchecked((uint)Arr.Length))
-            {
-                Resize(ref Allocator, out Arr);
-            }
 
-            Arr[ReadIndex] = Item;
+            unchecked
+            {
+                var NewReadIndex = ++ReadIndex;
+            
+                if ((uint)NewReadIndex >= (uint)Arr.Length)
+                {
+                    Resize(ref Allocator, out Arr);
+                }
+
+                Arr[NewReadIndex] = Item;
+            }
         }
         
         [MethodImpl(Opt)]
